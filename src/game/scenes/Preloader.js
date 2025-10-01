@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import SoundSystem from './SoundSystem';
 
 export class Preloader extends Scene
 {
@@ -29,31 +30,62 @@ export class Preloader extends Scene
 
     preload ()
     {
-     
 
+      // SOUNDS
 
-        //  Load the assets for the game - Replace with your own assets
+      SoundSystem.preload(this, {
+     // menu_music:   ['assets/audio/menu.ogg', 'assets/audio/menu.mp3'],
+      game_music:   [ 'assets/audio/game.mp3'],
+    //  ui_click:     ['assets/audio/ui/click.ogg','assets/audio/ui/click.mp3'],
+    //  ui_hover:     ['assets/audio/ui/hover.ogg','assets/audio/ui/hover.mp3'],
+      bell:         ['assets/audio/bell.mp3']
+    });
+
+     //Train Parts
         this.load.setPath('assets');
         this.load.spritesheet('train', 'train_v18_spritesheet.png', {
-    frameWidth: 256,
-    frameHeight: 64
-  });
-// Preloader.js
-//this.load.image('logo', '/assets/logo.png'); // NOT 'public/assets/...'
+        frameWidth: 256,
+        frameHeight: 64
+    });
+
+        this.load.spritesheet('train-carriage1', 'carriage_sprite.png', {
+        frameWidth: 256,
+        frameHeight: 64
+    });
+
+        this.load.spritesheet('train-carriage2', 'carriage_v18_car2_spritesheet.png', {
+        frameWidth: 256, frameHeight: 64
+    });
+
+        this.load.spritesheet('train-carriage5', 'carriage_v18_car5_spritesheet.png', {
+        frameWidth: 256, frameHeight: 64
+    });
+
+        this.load.image('Still-carriage1', 'carriage_v18_car3.png');
+        this.load.image('Still-carriage2', 'carriage_v18_car6.png');
+
+     // Background Scene
         for (let i = 0; i <= 5; i++) {
-    this.load.image(`desert${i}`, `DesertNight_${i}.png`);
-  }
-  
-        this.load.image('logo', 'logo.png');
-          this.load.image('background', 'bg.png');
-        this.load.image('trains', 'train_v18.png');
-    }
+        this.load.image(`desert${i}`, `DesertNight_${i}.png`);
+          }
+            this.load.image('logo', 'logo.png');
+            this.load.image('background', 'bg.png');
+            this.load.image('trains', 'train_v18.png');
+          }
 
     create ()
     {
         //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.
         //  For example, you can define global animations here, so we can use them in other scenes.
-
+        this.game.audio
+      /*.registerBank('menu', {
+        music: { key: 'menu_music', loop: true, volume: 0.8 },
+        sfx:   { click: 'ui_click', hover: 'ui_hover' }
+      })*/
+      .registerBank('game', {
+        music: { key: 'game_music', loop: true, volume: 1.0 },
+        sfx:   { bell: 'bell' }
+      });
         //  Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
         this.scene.start('MainMenu');
     }

@@ -1,3 +1,4 @@
+import AudioScene from './scenes/AudioScene';
 import { Boot } from './scenes/Boot';
 import { Game as MainGame } from './scenes/Game';
 import { GameOver } from './scenes/GameOver';
@@ -17,12 +18,21 @@ const config = {
     mode: Phaser.Scale.ENVELOP,     // cover the parent (may crop a little)
     autoCenter: Phaser.Scale.CENTER_BOTH
     },
+      physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { y: 1000 },   // or 0 if you want no gravity globally
+      debug: false
+    }
+},
     scene: [
+        
         Boot,
         Preloader,
         MainMenu,
         MainGame,
-        GameOver
+        GameOver,
+        AudioScene
     ]
 };
 

@@ -5,13 +5,25 @@ export class MainMenu extends Scene {
   constructor () { super('MainMenu'); }
 
   create () {
+
+    //SOUND
+    //const audio = this.game.audio;
+    //audio.playBankMusic('menu');    
+
     // CRT effect (registered in Boot)
     this.cameras.main.setPostPipeline('OldTV');
 
     // Create objects once
     this.bg   = this.add.image(0, 0, 'background').setOrigin(0.5); // make sure key matches your preloader
-    this.logo = this.add.image(0, 0, 'logo').setOrigin(0.5);
-    this.title = this.add.text(0, 0, 'Main Menu', {
+   // this.logo = this.add.image(0, 0, 'logo').setOrigin(0.5);
+    this.Gametitle = this.add.text(0, 0, 'West GANGSTAS', {
+      fontFamily: 'Arial Black',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 8,
+      align: 'center'
+    }).setOrigin(0.5);
+    this.title = this.add.text(0, 0, 'Tap To Play', {
       fontFamily: 'Arial Black',
       color: '#ffffff',
       stroke: '#000000',
@@ -29,9 +41,12 @@ export class MainMenu extends Scene {
       this.bg.setPosition(cx, cy).setScale(cover).setScrollFactor(0);
 
       // centered logo
-      const maxLogoW = width * 0.55, maxLogoH = height * 0.25;
-      const logoScale = Math.min(1, maxLogoW / this.logo.width, maxLogoH / this.logo.height);
-      this.logo.setPosition(cx, cy - height * 0.18).setScale(logoScale);
+      //const maxLogoW = width * 0.55, maxLogoH = height * 0.25;
+     // const logoScale = Math.min(1, maxLogoW / this.logo.width, maxLogoH / this.logo.height);
+    //  this.logo.setPosition(cx, cy - height * 0.18).setScale(logoScale);
+      this.Gametitle.setPosition(cx, cy - height * 0.18);
+      this.Gametitle.setFontSize(Math.round(height * 0.084)); // ≈48px at 1080p
+
 
       // centered title
       this.title.setPosition(cx, cy + height * 0.18);
