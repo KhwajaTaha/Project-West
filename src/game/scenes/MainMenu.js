@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { MainGame } from './Game.js';
 
 export class MainMenu extends Scene {
   constructor () { super('MainMenu'); }
@@ -72,6 +73,15 @@ export class MainMenu extends Scene {
     });
 
     // Start game on click/tap — pass reset flag so Game knows to zero the score
-    this.input.once('pointerdown', () => this.scene.start('MainGame', { resetScore: true }));
+    this.input.once('pointerdown', () => {
+  if (!this.scene.get('MainGame')) {
+    this.scene.add('MainGame', MainGame, true,{ resetScore: true });
+    this.scene.start('MainGame', { resetScore: true });
+    this.scene.stop('MainMenu');
+  } else {
+    this.scene.start('MainGame', { resetScore: true });
+    this.scene.stop('MainMenu');
+  }
+});
   }
 }
