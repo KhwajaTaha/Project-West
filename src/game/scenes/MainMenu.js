@@ -1,5 +1,4 @@
 import { Scene } from 'phaser';
-import OldTVPipeline from '../pipelines/OldTVPipeline';
 
 export class MainMenu extends Scene {
   constructor () { super('MainMenu'); }
@@ -11,18 +10,21 @@ export class MainMenu extends Scene {
     //audio.playBankMusic('menu');    
 
     // CRT effect (registered in Boot)
-    this.cameras.main.setPostPipeline('OldTV');
+   // this.cameras.main.setPostPipeline('OldTV');
 
     // Create objects once
-    this.bg   = this.add.image(0, 0, 'background').setOrigin(0.5); // make sure key matches your preloader
-   // this.logo = this.add.image(0, 0, 'logo').setOrigin(0.5);
-    this.Gametitle = this.add.text(0, 0, 'West GANGSTAS', {
+    // Background: use center origin so the relayout centering & cover scale work correctly
+    this.bg = this.add.image(0, 0, 'mainmenu').setOrigin(0.5, 0.5);
+    this.bg.setScrollFactor(0); // keep background fixed
+    this.bg.setDepth(0);
+    // this.logo = this.add.image(0, 0, 'logo').setOrigin(0.5);
+    /*this.Gametitle = this.add.text(0, 0, 'Sandwich-Please', {
       fontFamily: 'Arial Black',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 8,
       align: 'center'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5);*/
     this.title = this.add.text(0, 0, 'Tap To Play', {
       fontFamily: 'Arial Black',
       color: '#ffffff',
@@ -31,26 +33,35 @@ export class MainMenu extends Scene {
       align: 'center'
     }).setOrigin(0.5);
 
+    const FIT_MODE = 'stretch'; // 'contain' | 'cover' | 'stretch' -> choose desired behavior
+
     const relayout = () => {
       const { width, height } = this.scale;
       const cx = width * 0.5;
       const cy = height * 0.5;
 
-      // fullscreen background (cover)
-      const cover = Math.max(width / this.bg.width, height / this.bg.height);
-      this.bg.setPosition(cx, cy).setScale(cover).setScrollFactor(0);
+      // choose fitting strategy
+      if (FIT_MODE === 'stretch') {
+        // force exact fill (may distort image)
+        this.bg.setPosition(cx, cy);
+        this.bg.setDisplaySize(Math.ceil(width), Math.ceil(height));
+      } else if (FIT_MODE === 'cover') {
+        // cover -> fill and crop (maintains aspect ratio)
+        const cover = Math.max(width / this.bg.width, height / this.bg.height);
+        this.bg.setPosition(cx, cy).setScale(cover);
+      } else { // contain
+        // contain -> fit fully with letterbox/pillarbox (maintains aspect ratio, no crop)
+        const contain = Math.min(width / this.bg.width, height / this.bg.height);
+        this.bg.setPosition(cx, cy).setScale(contain);
+      }
 
-      // centered logo
-      //const maxLogoW = width * 0.55, maxLogoH = height * 0.25;
-     // const logoScale = Math.min(1, maxLogoW / this.logo.width, maxLogoH / this.logo.height);
-    //  this.logo.setPosition(cx, cy - height * 0.18).setScale(logoScale);
-      this.Gametitle.setPosition(cx, cy - height * 0.18);
-      this.Gametitle.setFontSize(Math.round(height * 0.084)); // ≈48px at 1080p
+      this.bg.setScrollFactor(0);
 
+    //  this.Gametitle.setPosition(cx, cy - height * 0.18);
+     // this.Gametitle.setFontSize(Math.round(height * 0.084));
 
-      // centered title
-      this.title.setPosition(cx, cy + height * 0.18);
-      this.title.setFontSize(Math.round(height * 0.044)); // ≈48px at 1080p
+     // this.title.setPosition(cx, cy + height * 0.18);
+    //  this.title.setFontSize(Math.round(height * 0.044));
     };
 
     // initial layout + respond to resizes
@@ -60,7 +71,7 @@ export class MainMenu extends Scene {
       this.scale.off('resize', relayout, this);
     });
 
-    // Start game on click/tap
-    this.input.once('pointerdown', () => this.scene.start('Game'));
+    // Start game on click/tap — pass reset flag so Game knows to zero the score
+    this.input.once('pointerdown', () => this.scene.start('MainGame', { resetScore: true }));
   }
 }
