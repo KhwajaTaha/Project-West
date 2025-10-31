@@ -23,7 +23,7 @@ export class Customer {
     this._followListener = null;
   }
 
-  request(duration = 5000) {
+  request(duration = 7000) {
     if (this.requested) return;
     this.requested = true;
 

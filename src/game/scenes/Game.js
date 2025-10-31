@@ -193,11 +193,16 @@ export class MainGame extends Phaser.Scene {
 
         if (!available.length) return;
         const pick = Phaser.Utils.Array.GetRandom(available);
-        pick.customer.request(5000); // 5s
+        pick.customer.request(7000); // 5s
       }
     });
+   this.refillstation = this.add.image(1640,1000,"refillstation").setScale(0.2);
+   this.desk = this.add.image(610,1015,"desk").setScale(0.3)
+   this.desk1 = this.add.image(200,1015,"desk").setScale(0.3)
+   this.desk2 = this.add.image(1025,1015,"desk").setScale(0.3)
 
-    this.isGameOver = false;
+//this.desk.displayWidth = this.desk.width *1.1;
+   this.isGameOver = false;
   }
 
   // ---------- Lives & penalties centralized here ----------
@@ -234,10 +239,10 @@ export class MainGame extends Phaser.Scene {
       fixedWidth: 60,
       fixedHeight: 60
     };
-    this.upButton = this.add.text(100, this.scale.height - 140, '↑', buttonConfig)
-      .setInteractive().setScrollFactor(0).setDepth(100).setAlpha(0.7);
-    this.downButton = this.add.text(100, this.scale.height - 70, '↓', buttonConfig)
-      .setInteractive().setScrollFactor(0).setDepth(100).setAlpha(0.7);
+    this.upButton = this.add.text(30, this.scale.height - 240, '↑', buttonConfig)
+      .setInteractive().setScrollFactor(0).setDepth(100).setAlpha(0.7).setScale(2.2);
+    this.downButton = this.add.text(30, this.scale.height - 120, '↓', buttonConfig)
+      .setInteractive().setScrollFactor(0).setDepth(100).setAlpha(0.7).setScale(2.2);;
 
     this.upButton.on('pointerdown', () => this.player?.moveUp());
     this.downButton.on('pointerdown', () => this.player?.moveDown());
@@ -382,9 +387,17 @@ export class MainGame extends Phaser.Scene {
     const scoreText = this.add.text(cx, cy + panelH * 0.06, 'Score: ' + (this.registry.get('score') || 0), textStyle).setOrigin(0.5).setDepth(215).setScrollFactor(0);
 
     const btnStyle = { fontFamily: 'Arial Black', fontSize: Math.round(panelH * 0.09) + 'px', color: '#fff', backgroundColor: '#000' };
-    const menuBtn = this.add.text(cx, cy + panelH * 0.28, 'Main Menu', btnStyle)
+    const menuBtn = this.add.text(cx, cy + panelH * 0.20, 'Main Menu', btnStyle)
       .setOrigin(0.5).setPadding({ x: 18, y: 10 }).setDepth(215).setInteractive({ useHandCursor: true }).setScrollFactor(0);
 
+      const restartBtn = this.add.text(cx, cy + panelH * 0.38, 'Restart', btnStyle)
+  .setOrigin(0.5)
+  .setPadding({ x: 18, y: 10 })
+  .setDepth(215)
+  .setInteractive({ useHandCursor: true })
+  .setScrollFactor(0);
+
+this._gameOverUI.push(restartBtn);
     this._gameOverUI.push(overlay, panel, title, scoreText, menuBtn);
 
     menuBtn.on('pointerdown', () => {
@@ -395,5 +408,26 @@ export class MainGame extends Phaser.Scene {
         this.scene.start('MainMenu');
       }, 50);
     });
+
+
+    //Restart button
+    restartBtn.on('pointerdown', () => {
+   // IMPORTANT: don't call _fullCleanup() here.
+  // It kills timers/listeners mid-transition and you don't need to remove the scene to restart it.
+
+  // Clean only transient UI/audio created by gameOver()
+  try {
+    if (this.mainMusic?.isPlaying) this.mainMusic.stop();
+  } catch (e) {}
+  this._destroyGameOverUI();
+
+  // If you registered 'MainGame' in the Phaser.Game config, this is the safest:
+  this.scene.restart({ resetScore: true });   // full re-create of the scene instance
+
+  // If you insist on start/stop instead of restart, use:
+  // this.scene.stop('MainGame');
+  // this.scene.start('MainGame', { resetScore: true });
+  }, 50);
+
   }
 }

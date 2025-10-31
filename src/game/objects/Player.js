@@ -130,44 +130,46 @@ export class Player {
         if (this.scene.shotsText) this.scene.shotsText.setText('Hotdogs: ' + this.shots);
       }
     } else {
-      const sameRowAnyCustomers = customers.filter(c => c.customer && Math.abs(c.y - this.sprite.y) <= 6);
-      if (!sameRowAnyCustomers.length) return;
+      // This block handles throws to a row with NO requesting customers.
+      // This is a "mistake" by the player.
+      const customersInRow = customers.filter(c => c.customer && Math.abs(c.y - this.sprite.y) <= 6);
+      if (!customersInRow.length) return;
 
-      const catcher = sameRowAnyCustomers.reduce((closest, current) =>
+      // Find the customer closest to the player in that row.
+      const targetCustomer = customersInRow.reduce((closest, current) =>
         Math.abs(current.x - this.sprite.x) < Math.abs(closest.x - this.sprite.x) ? current : closest
       );
 
+      // Animate the sandwich throw to the non-requesting customer.
       const spawnX = this.sprite.x - 50;
       const spawnY = this.sprite.y - 30;
       const hotdog = this.hotdogs.create(spawnX, spawnY, 'hotdog');
       hotdog.setScale(0.067);
 
+      this.shots--; // Use up a sandwich
+      if (this.scene.shotsText) this.scene.shotsText.setText('Hotdogs: ' + this.shots);
+
       this.scene.tweens.add({
         targets: hotdog,
-        x: catcher.x,
-        y: catcher.y,
+        x: targetCustomer.x,
+        y: targetCustomer.y,
         duration: 1800,
         ease: 'Linear',
         onComplete: () => {
-          if (catcher.customer?.onCaughtHotdog) { try { catcher.customer.onCaughtHotdog(); } catch {} }
-
-          this.scene.time.delayedCall(250, () => {
-            try { hotdog?.destroy?.(); } catch {}
-            if (this.scene.moneys) {
-              const money = this.scene.moneys.create(catcher.x, catcher.y, 'hotdog');
-              if (money.setScale) money.setScale(0.1);
-
-              this.scene.tweens.add({
-                targets: money,
-                x: playerTargetX,
-                y: playerTargetY,
-                duration: 800,
-                ease: 'Cubic',
-                onComplete: () => { try { money?.destroy?.(); } catch {} }
-              });
+          // The customer "catches" it and immediately throws it back.
+          this.scene.tweens.add({
+            targets: hotdog,
+            x: playerTargetX, // The player's original position
+            y: playerTargetY,
+            duration: 800, // Faster return throw
+            ease: 'Cubic.easeIn',
+            onComplete: () => {
+              hotdog.destroy();
+              // Apply score penalty when it returns to the player.
+              const currentScore = this.scene.registry.get('score') || 0;
+              this.scene.registry.set('score', currentScore - 1);
             }
-            if (catcher.customer?.onThrowBack) { try { catcher.customer.onThrowBack(); } catch {} }
-          }, [], this);
+          });
         }
       });
     }

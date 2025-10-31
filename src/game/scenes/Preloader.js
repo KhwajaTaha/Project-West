@@ -24,6 +24,8 @@ export class Preloader extends Scene
     this.load.image('basketball', 'assets/basketball.png');
     this.load.image('mainmenu', 'assets/mainmenu2.png');
     this.load.image('money', 'assets/money.png');
+    this.load.image('refillstation', 'assets/refill.png');
+    this.load.image('desk', 'assets/barrier.png');
 
     // add this in your scene's preload()
     this.load.audio('request_sfx', 'assets/sfx/request_sfx.mp3');
