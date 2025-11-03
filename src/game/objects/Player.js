@@ -42,7 +42,7 @@ export class Player {
     // ammo & HUD link (HUD is owned by scene)
     this.shots = initialShots;
     this.scene.shots = this.shots;
-    if (this.scene.shotsText) this.scene.shotsText.setText('Hotdogs: ' + this.shots);
+    if (this.scene.shotsText) this.scene.shotsText.setText(':' + this.shots);
 
     // input
     this.keys = this.scene.input.keyboard.addKeys({
@@ -127,7 +127,7 @@ export class Player {
         });
 
         this.shots--;
-        if (this.scene.shotsText) this.scene.shotsText.setText('Hotdogs: ' + this.shots);
+        if (this.scene.shotsText) this.scene.shotsText.setText(':' + this.shots);
       }
     } else {
       // This block handles throws to a row with NO requesting customers.
@@ -147,7 +147,7 @@ export class Player {
       hotdog.setScale(0.067);
 
       this.shots--; // Use up a sandwich
-      if (this.scene.shotsText) this.scene.shotsText.setText('Hotdogs: ' + this.shots);
+      if (this.scene.shotsText) this.scene.shotsText.setText(':' + this.shots);
 
       this.scene.tweens.add({
         targets: hotdog,

@@ -28,7 +28,14 @@ const config = {
             debugVelocityColor: 0xff0000,
             debugBodyColor: 0x00ff00,
             debugStaticBodyColor: 0x0000ff
-        }
+        },
+        
+    },
+    input: {
+    keyboard: true,
+    mouse: true,
+    touch: true,
+    gamepad: true
     },
     scene: [
         Boot,

@@ -106,7 +106,8 @@ export class MainGame extends Phaser.Scene {
     if (this.scene.settings?.data?.resetScore) this.registry.set('score', 0);
     else if (this.registry.get('score') === undefined) this.registry.set('score', 0);
 
-    this.shotsText = this.add.text(20, 45, 'Hotdogs: 10', { fontSize: '18px', fill: '#fff' });
+    this.shotsText = this.add.text(1255, 40, ': 10', { fontSize: '50px', fill: '#fff' });
+    this.showhotdogs = this.add.image(1210,60,'hotdog').setScale(0.09);
 
     // centralized Lives UI (moved here from Player/Customer)
     const lifeStyle = { fontFamily: 'DotGothic16', fontSize: '50px', color: '#ffffff', stroke: '#000000', strokeThickness: 4 };
@@ -203,6 +204,40 @@ export class MainGame extends Phaser.Scene {
 
 //this.desk.displayWidth = this.desk.width *1.1;
    this.isGameOver = false;
+
+   // --- PS5 / Gamepad support ---
+this.input.gamepad.once('connected', (pad) => {
+  console.log('[Gamepad] connected:', pad.id);
+  this.pad = pad;
+});
+
+this.input.gamepad.on('disconnected', () => {
+  this.pad = null;
+});
+
+// Poll gamepad each frame
+this.events.on('update', () => {
+  if (!this.pad || this.isGameOver) return;
+
+  const yAxis = this.pad.axes.length > 1 ? this.pad.axes[1].getValue() : 0;
+  const upPressed = this.pad.up || yAxis < -0.5;
+  const downPressed = this.pad.down || yAxis > 0.5;
+
+  // buttons: PS5 X = index 0
+  const xButton = this.pad.buttons.length > 0 ? this.pad.buttons[0] : null;
+  const xPressed = xButton && xButton.value > 0.5;
+
+  // handle up/down movement once per press
+  if (upPressed && !this._gpPrevUp) this.player.moveUp();
+  if (downPressed && !this._gpPrevDown) this.player.moveDown();
+  if (xPressed && !this._gpPrevX) this.player.throwHotdog();
+
+  this._gpPrevUp = upPressed;
+  this._gpPrevDown = downPressed;
+  this._gpPrevX = xPressed;
+});
+
+
   }
 
   // ---------- Lives & penalties centralized here ----------
