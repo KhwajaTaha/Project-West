@@ -29,6 +29,7 @@ export class Preloader extends Scene
 
     // add this in your scene's preload()
     this.load.audio('request_sfx', 'assets/sfx/request_sfx.mp3');
+    this.load.audio('boo_sound', 'assets/sfx/boo_sound.wav');
   }
   create(){
     this.scene.start('MainMenu');

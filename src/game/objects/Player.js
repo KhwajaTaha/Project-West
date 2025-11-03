@@ -1,5 +1,5 @@
 export class Player {
-  constructor(scene, x, y, texture, hotdogsGroup, initialShots = 10) {
+  constructor(scene, x, y, texture, hotdogsGroup, initialShots = 20) {
     this.scene = scene;
     this.hotdogs = hotdogsGroup;
 
@@ -108,26 +108,35 @@ export class Player {
           ease: 'Linear',
           onComplete: () => {
             hotdog.destroy();
-            if (typeof target.customer.clearRequest === 'function') target.customer.clearRequest();
+             target.customer?.clearRequest?.();
+
+             if (typeof this.onSandwichDelivered === 'function') {
+        this.onSandwichDelivered();
+      }
 
             // spawn money at customer then tween to player snapshot
-            if (this.scene.moneys) {
-              const money = this.scene.moneys.create(target.x, target.y, 'money');
-              if (money.setScale) money.setScale(0.08);
-              if (money.body) money.body.setAllowGravity(false);
-              this.scene.tweens.add({
-                targets: money,
-                x: playerTargetX,
-                y: playerTargetY,
-                duration: 2800,
-                ease: 'Cubic'
-              });
+           const money = this.scene.moneys?.create(target.x, target.y, 'money');
+  if (money) {
+    money.setScale?.(0.08);
+    if (money.body) money.body.setAllowGravity(false);
+    this.scene.tweens.add({
+      targets: money,
+      x: playerTargetX,
+      y: playerTargetY,
+      duration: 2800,
+      ease: 'Cubic'
+    });
+
+    if (typeof this.scene.onSandwichDelivered === 'function') {
+    this.scene.onSandwichDelivered();
+  }
             }
           }
         });
 
         this.shots--;
         if (this.scene.shotsText) this.scene.shotsText.setText(':' + this.shots);
+
       }
     } else {
       // This block handles throws to a row with NO requesting customers.
@@ -166,8 +175,16 @@ export class Player {
             onComplete: () => {
               hotdog.destroy();
               // Apply score penalty when it returns to the player.
-              const currentScore = this.scene.registry.get('score') || 0;
-              this.scene.registry.set('score', currentScore - 1);
+              if (typeof this.scene._decreaseScore === 'function') {
+  this.scene._decreaseScore(1);
+} else {
+  const currentScore = this.scene.registry.get('score') || 0;
+  let next = currentScore - 1;
+  if (next < 0) next = 0;           // clamp without Math.max
+  this.scene.registry.set('score', next);
+}
+
+
             }
           });
         }
@@ -184,10 +201,28 @@ export class Player {
   moveUp()  { if (this.currentIndex <= 0 || this.isMoving) return; this.currentIndex--; this._setY(this.positions[this.currentIndex]); }
   moveDown(){ if (this.currentIndex >= this.positions.length - 1 || this.isMoving) return; this.currentIndex++; this._setY(this.positions[this.currentIndex]); }
 
+  
   _setY(newY) {
     this.isMoving = true;
     this.scene.tweens.add({ targets: this.sprite, y: newY, duration: 100, ease: 'Power2', onComplete: () => { this.isMoving = false; } });
   }
+  // --- Add more sandwiches (used when starting a new set) ---
+  addShots(delta) {
+  // Increase sandwich count
+  this.shots += delta;
+
+  // Update on-screen counter
+  if (this.scene.shotsText) {
+    this.scene.shotsText.setText(':' + this.shots);
+  }
+
+  // Notify the scene that shot count changed (if needed)
+  if (typeof this.scene.onShotsChanged === 'function') {
+    this.scene.onShotsChanged(this.shots);
+  }
+}
+
+
 
   lost() {
     try {

@@ -135,6 +135,17 @@ export class MainGame extends Phaser.Scene {
       if (this.mainMusic?.isPlaying) this.mainMusic.stop();
     });
 
+    // Show current Set number
+  this.setNumber = 1;
+  this.deliveredThisSet = 0;
+  this.setText = this.add.text(970, 220, 'Set: ' + this.setNumber, {
+  fontFamily: 'DotGothic16',
+  fontSize: '50px',
+  color: '#ffffff',
+  stroke: '#000000',
+  strokeThickness: 4
+  }).setScrollFactor(0).setDepth(100);
+
     // player
     this.player = new Player(this, 1700, 910, 'vendor_idle', this.hotdogs);
 
@@ -236,8 +247,11 @@ this.events.on('update', () => {
   this._gpPrevDown = downPressed;
   this._gpPrevX = xPressed;
 });
-
-
+  this.enemyHotdogs = this.physics.add.group({
+  classType: Phaser.Physics.Arcade.Sprite,
+  allowGravity: false,
+  immovable: true
+});
   }
 
   // ---------- Lives & penalties centralized here ----------
@@ -249,6 +263,7 @@ this.events.on('update', () => {
     if (v <= 0 || scoreVal <= -5) this.gameOver();
   }
 
+  
   addLives(delta) {
     this._setLives(Math.max(0, this.lives + delta));
   }
@@ -257,11 +272,113 @@ this.events.on('update', () => {
     this.addLives(-Math.abs(delta));
   }
 
+// --- Called every time a sandwich is successfully delivered ---
+onSandwichDelivered() {
+  if (this.isGameOver) return;
+
+  // Track deliveries this set
+  if (!this.deliveredThisSet) this.deliveredThisSet = 0;
+  this.deliveredThisSet += 1;
+
+  // When 20 sandwiches are delivered, start a new set
+  if (this.player.shots <= 0) {
+    this.deliveredThisSet = 0;
+  
+
+    // Advance set counter and update HUD
+    this.setNumber = (this.setNumber || 1) + 1;
+    if (this.setText) this.setText.setText('Set: ' + this.setNumber);
+
+    // Give the player +20 hotdogs for the new set
+    if (this.player && typeof this.player.addShots === 'function') {
+      // ✅ NEW: pause & show blinking banner for the new set
+    this._announceNewSet(this.setNumber);
+      this.player.addShots(20);
+    }
+
+    // Grant +1 life for completing the set
+    if (typeof this.addLives === 'function') {
+      this.addLives(1);
+    } else if (this.livesText) {
+      // Fallback if you don't use addLives/_setLives helpers
+      this.lives = (this.lives ?? 0) + 1;
+      this.livesText.setText('Lives: ' + this.lives);
+    }
+  }
+}
+
+// Pause the game for ~2s and show "SET N" blinking 3x
+_announceNewSet(setNum) {
+  // --- Pause inputs, physics, and spawner ---
+  const prevInputEnabled = this.input.enabled;
+  this.input.enabled = false;
+
+  let prevPhysicsPaused = false;
+  if (this.physics && this.physics.world) {
+    prevPhysicsPaused = this.physics.world.isPaused;
+    this.physics.world.pause();
+  }
+
+  const hadSpawner = !!this.requestSpawner;
+  if (hadSpawner) this.requestSpawner.paused = true;
+
+  // --- Create banner text in the center ---
+  const { width, height } = this.scale;
+  const banner = this.add.text(590,115, `SET: ${setNum}`, {
+    fontFamily: 'Arial Black',
+    fontSize: '72px',
+    color: '#ffffff',
+    stroke: '#000000',
+    strokeThickness: 8
+  })
+  .setOrigin(0.5)
+  .setDepth(2000)
+  .setAlpha(1);
+
+  
+
+  // --- Blink 3 times (alpha 1↔0) ---
+  // Each yoyo cycle counts as one blink; repeat:2 => 3 blinks total.
+  this.tweens.add({
+    targets: banner,
+    alpha: 0,
+    duration: 300,
+    yoyo: true,
+    repeat: 2
+  });
+
+  // --- Resume everything after ~2s ---
+  this.time.delayedCall(3000, () => {
+    try { banner.destroy(); } catch {}
+
+    // resume input
+    this.input.enabled = prevInputEnabled;
+
+    // resume physics
+    if (this.physics && this.physics.world && !prevPhysicsPaused) {
+      this.physics.world.resume();
+    }
+
+    // resume spawner
+    if (hadSpawner && this.requestSpawner) {
+      this.requestSpawner.paused = false;
+    }
+  });
+}
+// Decrease score safely (never below 0)
+_decreaseScore(amount = 1) {
+  const current = this.registry.get('score') || 0;
+  let next = current - amount;
+  if (next < 0) next = 0;           // clamp without Math.max
+  this.registry.set('score', next);
+}
+
   onCustomerRequestTimeout(/*customer*/) {
     // when a request times out, apply penalties here (used to be in Customer.js)
     this.loseLife(1);
-    const current = this.registry.get('score') || 0;
-    this.registry.set('score', current - 1);
+    this._decreaseScore(1);
+
+
   }
   // --------------------------------------------------------
 
@@ -282,6 +399,71 @@ this.events.on('update', () => {
     this.upButton.on('pointerdown', () => this.player?.moveUp());
     this.downButton.on('pointerdown', () => this.player?.moveDown());
   }
+// Audience throws a bunch of hotdogs at the player (visual only)
+_audienceBarrage(durationMs = 5000, count = 30) {
+  
+  if (!this.customers) return;
+  const crowd = this.customers.getChildren();
+  if (!crowd || crowd.length === 0) return;
+
+  // Separate group so we don't trigger your normal hotdog overlaps
+  if (!this.enemyHotdogs && this.physics) {
+    this.enemyHotdogs = this.physics.add.group();
+  }
+
+  const playerX = this.player?.sprite?.x ?? this.player?.x ?? this.scale.width * 0.8;
+  const playerY = this.player?.sprite?.y ?? this.player?.y ?? this.scale.height * 0.8;
+
+  const interval = Math.max(50, Math.floor(durationMs / Math.max(1, count))); // ~every 160ms for 30 in 5s
+  const repeats = Math.max(0, count - 1);
+
+  this.time.addEvent({
+    delay: interval,
+    repeat: repeats,
+    callback: () => {
+      
+      // pick a random audience member as the source
+      
+      const src = Phaser.Utils.Array.GetRandom(crowd);
+      if (!src) return;
+
+      const sx = src.x;
+      const sy = src.y;
+
+      // spawn a hotdog projectile
+      const h = (this.enemyHotdogs ?? this.add).create
+        ? this.enemyHotdogs.create(sx, sy, 'hotdog')
+        : this.add.image(sx, sy, 'hotdog');
+
+      // make it look like your normal hotdogs
+      if (h.setScale) h.setScale(0.067);
+      if (h.body && h.body.setAllowGravity) h.body.setAllowGravity(false);
+
+      // aim near the player with some randomness
+      //const tx = playerX + Phaser.Math.Between(-90, 90);
+      //const ty = playerY + Phaser.Math.Between(-60, 60);
+      const tx = playerX 
+      const ty = playerY 
+      const flyMs = Phaser.Math.Between(650, 1100);
+
+      this.tweens.add({
+        targets: h,
+        x: tx,
+        y: ty,
+        duration: flyMs,
+        ease: 'Cubic.easeIn',
+        onComplete: () => {
+          try { h.destroy(); } catch {}
+        }
+      });
+    }
+  });
+
+  // safety cleanup after the effect
+  this.time.delayedCall(durationMs + 1500, () => {
+    try { this.enemyHotdogs?.clear?.(true, true); } catch {}
+  });
+}
 
   hitRequestIcon(hotdog, requestIcon) {
     const customerHolder = this.customers.getChildren().find(c => c.customer && c.customer.requestIcon === requestIcon);
@@ -380,6 +562,11 @@ this.events.on('update', () => {
   }
 
   gameOver() {
+    //Play sound BOO
+    this.sound.play('boo_sound');
+    // unleash 30 hotdogs over ~5s from the audience toward the player
+this._audienceBarrage(3500, 15);
+
     if (this.isGameOver) return;
     this.isGameOver = true;
 
@@ -436,6 +623,7 @@ this._gameOverUI.push(restartBtn);
     this._gameOverUI.push(overlay, panel, title, scoreText, menuBtn);
 
     menuBtn.on('pointerdown', () => {
+      this.sound.stopAll();
       this._fullCleanup();
       setTimeout(() => {
         this.scene.stop('MainGame');
@@ -447,6 +635,7 @@ this._gameOverUI.push(restartBtn);
 
     //Restart button
     restartBtn.on('pointerdown', () => {
+      this.sound.stopAll();
    // IMPORTANT: don't call _fullCleanup() here.
   // It kills timers/listeners mid-transition and you don't need to remove the scene to restart it.
 
